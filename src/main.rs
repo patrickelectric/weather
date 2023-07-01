@@ -17,33 +17,13 @@ use hal::{
     clock::ClockControl, delay, peripherals::Peripherals, prelude::*, spi, timer::TimerGroup, Rtc,
     IO,
 };
-#[global_allocator]
-static ALLOCATOR: esp_alloc::EspHeap = esp_alloc::EspHeap::empty();
 
-fn init_heap() {
-    const HEAP_SIZE: usize = 32 * 1024;
-
-    extern "C" {
-        static mut _heap_start: u32;
-        static mut _heap_end: u32;
-    }
-
-    unsafe {
-        let heap_start = &_heap_start as *const _ as usize;
-        let heap_end = &_heap_end as *const _ as usize;
-        println!("Heap start and end: {} / {}", _heap_start, _heap_end);
-        assert!(
-            heap_end - heap_start > HEAP_SIZE,
-            "Not enough available heap memory."
-        );
-        ALLOCATOR.init(heap_start as *mut u8, HEAP_SIZE);
-    }
-}
+mod allocator;
 
 #[entry]
 fn main() -> ! {
     println!("init_heap!");
-    init_heap();
+    allocator::init_heap();
     let peripherals = Peripherals::take();
     let mut system = peripherals.SYSTEM.split();
     let mut clocks = ClockControl::boot_defaults(system.clock_control).freeze();
@@ -65,7 +45,7 @@ fn main() -> ! {
 
     let mut spi = spi::Spi::new_no_cs(
         peripherals.SPI2,
-        io.pins.gpio36,
+        io.pins.gpio31,
         io.pins.gpio35,
         io.pins.gpio37,
         1u32.MHz(),
